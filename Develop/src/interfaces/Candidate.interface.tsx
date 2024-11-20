@@ -1,7 +1,7 @@
 // TODO: Create an interface for the Candidate objects returned by the API
  
 
-export interface Candidate {
+ interface Candidate {
     login: string;
     id: number;
     avatarUrl: string;
@@ -13,3 +13,4 @@ export interface Candidate {
     location: string;
     }
 
+export default Candidate;
