@@ -1,47 +1,71 @@
-import { useState, useEffect } from 'react';
-import { searchGithub, searchGithubUser } from '../api/API';
-
+import { useState, useEffect, useCallback } from "react";
+import { searchGithub, searchGithubUser } from "../api/API";
+import Candidate from "../interfaces/Candidate.interface";
+import CandidateCard from "../components/candidateCard";
 const CandidateSearch = () => {
-  const [candidates, setCandidates] = useState<{ login: string }[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [currentUser, setCurrentUser] = useState({name: '', email: '', bio: '', company: '', location: ''});
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [potentialCandidates, setPotentialCandidates] = useState<Candidate[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const transformUserToCandidate = async (user: { login: string; id: number; avatar_url: string; html_url: string; }): Promise<Candidate> => {
+    const detailedUser = await searchGithubUser(user.login);
+    return {
+      id: user.id,
+      name: detailedUser.name || "Unknown",
+      login: user.login,
+      location: detailedUser.location || "Unknown",
+      avatarUrl: user.avatar_url,
+      email: detailedUser.email || "Not Available",
+      htmlUrl: user.html_url,
+      company: detailedUser.company || "Unknown",
+      bio: detailedUser.bio || "No bio provided",
+    };
+  };
+  const fetchCandidates = useCallback(async () => {
+    try {
+      setError(null);
+      setLoading(true);
+      const rawUsers = await searchGithub();
+      const transformedCandidates = await Promise.all(
+        rawUsers.map((user: { login: string; id: number; avatar_url: string; html_url: string; }) => transformUserToCandidate(user))
+      );
+      setCandidates(transformedCandidates);
+    } catch {
+      setError("Failed to load candidates. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
   useEffect(() => {
-    searchGithub().then((data) => {
-      setCandidates(data);
-    });
-  }, []);  
-  console.log(candidates);
-useEffect(() => {
-  if (candidates.length === 0) return;
-  searchGithubUser(candidates[currentIndex].login).then((data) => {
-    console.log(data);
-    setCurrentUser(data);
-  });
-}, [currentIndex, candidates]);
-console.log(currentUser);
-
+    fetchCandidates();
+  }, [fetchCandidates] );
+  const handleSave = () => {
+    if (candidates.length > 0) {
+      const [currentCandidate, ...rest] = candidates;
+      setPotentialCandidates([...potentialCandidates, currentCandidate]);
+      setCandidates(rest);
+    }
+  };
+  const handleSkip = () => {
+    if (candidates.length > 0) {
+      const [, ...rest] = candidates;
+      setCandidates(rest);
+    }
+  };
+  useEffect(() => {
+    localStorage.setItem("potentialCandidates", JSON.stringify(potentialCandidates));
+  }, [potentialCandidates]);
+  if (loading) return <div>Loading candidates...</div>;
+  if (error) return <div>{error}</div>;
+  if (candidates.length === 0) return <div>No more candidates available!</div>;
+  const currentCandidate = candidates[0];
   return (
     <div>
-      <h1>CandidateSearch</h1>
+      <h2 style={{fontSize:"60px", display: "flex", justifyContent: "center", margin: "0px"}}>Candidate Search</h2>
       <div>
-        <h3>{currentUser.name ||"n/a"}</h3>
-        <p>{currentUser.email ||"n/a"}</p>
-        <p>{currentUser.bio ||"n/a"}</p>
-        <p>{currentUser.company ||"n/a"}</p>
-        <p>{currentUser.location ||"n/a"}</p>
-        <button onClick={() => setCurrentIndex((prev) => prev + 1)}>Next</button>
-        </div>
+        <CandidateCard candidate={currentCandidate} onSave={handleSave} onSkip={handleSkip} />
+      </div>
     </div>
   );
 };
-
-
-//set up state for github user data
-
-
-//set up state for current user index
-//set up use affect to call searchGithub when the component mounts
-
-
-
 export default CandidateSearch;
