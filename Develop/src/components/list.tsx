@@ -32,7 +32,7 @@ const List = ({ candidates, onRemove }: CandidateTableProps) => {
                 {candidate.name} ({candidate.login})
               </td>
               <td style={{ padding: "10px", border: "1px solid #333" }}>{candidate.location}</td>
-              <td style={{ padding: "10px", border: "1px solid #333" }}>{candidate.htmlUrl}</td>
+              <td style={{ padding: "10px", border: "1px solid #333" }}><a href={candidate.htmlUrl} target="_blank" rel="noopener noreferrer">{candidate.htmlUrl}</a></td>
               <td style={{ padding: "10px", border: "1px solid #333" }}>{candidate.company}</td>
               <td style={{ padding: "10px", border: "1px solid #333" }}>{candidate.bio}</td>
               <td style={{ padding: "10px", border: "1px solid #333" }}>
